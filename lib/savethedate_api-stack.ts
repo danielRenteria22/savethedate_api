@@ -6,6 +6,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigw from "aws-cdk-lib/aws-apigateway";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 
 export class SavethedateApiStack extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -59,12 +60,24 @@ export class SavethedateApiStack extends cdk.Stack {
 		});
 
 		// ------------------------------------------------------------------ //
+		//  2.5. DynamoDB Table                                                 //
+		// ------------------------------------------------------------------ //
+		const invitationsTable = new dynamodb.Table(this, "InvitationsTable", {
+			tableName: "invitations-table",
+			partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
+			sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
+			billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+			removalPolicy: cdk.RemovalPolicy.DESTROY,
+		});
+
+		// ------------------------------------------------------------------ //
 		//  3. Shared Lambda environment variables                              //
 		// ------------------------------------------------------------------ //
 		const commonEnv: Record<string, string> = {
 			USER_POOL_ID: userPool.userPoolId,
 			CLIENT_ID: userPoolClient.userPoolClientId,
 			REGION: this.region,
+			TABLE_NAME: invitationsTable.tableName,
 		};
 
 		// ------------------------------------------------------------------ //
@@ -149,6 +162,30 @@ export class SavethedateApiStack extends cdk.Stack {
 			})
 		);
 
+		// --- Create Event Lambda (admin group only) ------------------------
+		const createEventFn = new lambda.Function(this, "CreateEventFunction", {
+			...defaultLambdaProps,
+			functionName: "create-event",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas/")),
+			handler: "create_event.index.handler",
+		});
+
+		createEventFn.addToRolePolicy(
+			new iam.PolicyStatement({
+				actions: [
+					"cognito-idp:AdminCreateUser",
+					"cognito-idp:AdminSetUserPassword",
+					"cognito-idp:AdminAddUserToGroup",
+				],
+				resources: [userPool.userPoolArn],
+			})
+		);
+
+		// Grant DynamoDB permissions to relevant Lambdas
+		invitationsTable.grantReadWriteData(publicFn);
+		invitationsTable.grantReadWriteData(adminFn);
+		invitationsTable.grantReadWriteData(createEventFn);
+
 		// --- Change Password Lambda (first-time users) ----------------------
 		const changePasswordFn = new lambda.Function(this, "ChangePasswordFunction", {
 			...defaultLambdaProps,
@@ -213,10 +250,15 @@ export class SavethedateApiStack extends cdk.Stack {
 			.addMethod("GET", new apigw.LambdaIntegration(publicFn), authorizedMethodOptions);
 
 		// ---- /api/admin/users  (admin group only) --------------------------
-		apiResource
-			.addResource("admin")
+		const adminResource = apiResource.addResource("admin");
+		adminResource
 			.addResource("users")
 			.addMethod("GET", new apigw.LambdaIntegration(adminFn), authorizedMethodOptions);
+
+		// ---- /api/admin/event  (admin group only) --------------------------
+		adminResource
+			.addResource("event")
+			.addMethod("POST", new apigw.LambdaIntegration(createEventFn), authorizedMethodOptions);
 
 		// ------------------------------------------------------------------ //
 		//  7. Stack outputs                                                    //
@@ -225,5 +267,6 @@ export class SavethedateApiStack extends cdk.Stack {
 		new cdk.CfnOutput(this, "UserPoolClientId", { value: userPoolClient.userPoolClientId });
 		new cdk.CfnOutput(this, "ApiUrl", { value: api.url });
 		new cdk.CfnOutput(this, "LoginEndpoint", { value: `${api.url}auth/login` });
+		new cdk.CfnOutput(this, "TableName", { value: invitationsTable.tableName });
 	}
 }
