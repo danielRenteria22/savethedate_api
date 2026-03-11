@@ -126,10 +126,13 @@ def handler(event, context):
     if is_admin_route and not is_admin:
         effect = "Deny"
 
+    # Use wildcard resource so cached policy works for all endpoints
+    resource_wildcard = method_arn.split("/")[0] + "/*"
+    
     policy = _generate_policy(
         principal_id=payload["sub"],
         effect=effect,
-        resource=method_arn,
+        resource=resource_wildcard,
     )
 
     # Context fields are passed to the Lambda integration as

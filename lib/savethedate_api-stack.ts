@@ -123,23 +123,23 @@ export class SavethedateApiStack extends cdk.Stack {
 			})
 		);
 
-		// --- Lambda Authorizer ----------------------------------------------
-		const authorizerFn = new lambda.Function(this, "AuthorizerFunction", {
+		// --- Admin Authorizer -----------------------------------------------
+		const adminAuthorizerFn = new lambda.Function(this, "AdminAuthorizerFunction", {
 			...defaultLambdaProps,
-			functionName: "cognito-authorizer",
+			functionName: "cognito-admin-authorizer",
 			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas/authorizer")),
+			handler: "admin.handler",
 			timeout: cdk.Duration.seconds(10),
 		});
 
-		authorizerFn.addToRolePolicy(
-			new iam.PolicyStatement({
-				actions: [
-					"cognito-idp:GetUser",
-					"cognito-idp:AdminListGroupsForUser",
-				],
-				resources: [userPool.userPoolArn],
-			})
-		);
+		// --- User Authorizer ------------------------------------------------
+		const userAuthorizerFn = new lambda.Function(this, "UserAuthorizerFunction", {
+			...defaultLambdaProps,
+			functionName: "cognito-user-authorizer",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas/authorizer")),
+			handler: "user.handler",
+			timeout: cdk.Duration.seconds(10),
+		});
 
 		// --- Public endpoint Lambda (any authenticated user) ----------------
 		const publicFn = new lambda.Function(this, "PublicFunction", {
@@ -181,10 +181,44 @@ export class SavethedateApiStack extends cdk.Stack {
 			})
 		);
 
+		// --- List Events Lambda (admin group only) -------------------------
+		const listEventsFn = new lambda.Function(this, "ListEventsFunction", {
+			...defaultLambdaProps,
+			functionName: "list-events",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "list_events.index.handler",
+		});
+
+		// --- Update Event Lambda (admin group only) ------------------------
+		const updateEventFn = new lambda.Function(this, "UpdateEventFunction", {
+			...defaultLambdaProps,
+			functionName: "update-event",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "update_event.index.handler",
+		});
+
+		// --- Delete Event Lambda (admin group only) ------------------------
+		const deleteEventFn = new lambda.Function(this, "DeleteEventFunction", {
+			...defaultLambdaProps,
+			functionName: "delete-event",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "delete_event.index.handler",
+		});
+
+		deleteEventFn.addToRolePolicy(
+			new iam.PolicyStatement({
+				actions: ["cognito-idp:AdminDeleteUser"],
+				resources: [userPool.userPoolArn],
+			})
+		);
+
 		// Grant DynamoDB permissions to relevant Lambdas
 		invitationsTable.grantReadWriteData(publicFn);
 		invitationsTable.grantReadWriteData(adminFn);
 		invitationsTable.grantReadWriteData(createEventFn);
+		invitationsTable.grantReadWriteData(listEventsFn);
+		invitationsTable.grantReadWriteData(updateEventFn);
+		invitationsTable.grantReadWriteData(deleteEventFn);
 
 		// --- Change Password Lambda (first-time users) ----------------------
 		const changePasswordFn = new lambda.Function(this, "ChangePasswordFunction", {
@@ -216,16 +250,28 @@ export class SavethedateApiStack extends cdk.Stack {
 			},
 		});
 
-		// Lambda token authorizer — caches policy for 5 minutes
-		const tokenAuthorizer = new apigw.TokenAuthorizer(this, "TokenAuthorizer", {
-			handler: authorizerFn,
+		// Admin token authorizer — requires admin group
+		const adminAuthorizer = new apigw.TokenAuthorizer(this, "AdminAuthorizer", {
+			handler: adminAuthorizerFn,
 			identitySource: "method.request.header.Authorization",
 			resultsCacheTtl: cdk.Duration.minutes(5),
 		});
 
-		const authorizedMethodOptions: apigw.MethodOptions = {
+		// User token authorizer — requires user group
+		const userAuthorizer = new apigw.TokenAuthorizer(this, "UserAuthorizer", {
+			handler: userAuthorizerFn,
+			identitySource: "method.request.header.Authorization",
+			resultsCacheTtl: cdk.Duration.minutes(5),
+		});
+
+		const adminMethodOptions: apigw.MethodOptions = {
 			authorizationType: apigw.AuthorizationType.CUSTOM,
-			authorizer: tokenAuthorizer,
+			authorizer: adminAuthorizer,
+		};
+
+		const userMethodOptions: apigw.MethodOptions = {
+			authorizationType: apigw.AuthorizationType.CUSTOM,
+			authorizer: userAuthorizer,
 		};
 
 		// ---- /auth/login  (public, no authorizer) --------------------------
@@ -243,22 +289,26 @@ export class SavethedateApiStack extends cdk.Stack {
 				authorizationType: apigw.AuthorizationType.NONE,
 			});
 
-		// ---- /api/data  (any authenticated user) ---------------------------
+		// ---- /api/data  (user group required) ------------------------------
 		const apiResource = api.root.addResource("api");
 		apiResource
 			.addResource("data")
-			.addMethod("GET", new apigw.LambdaIntegration(publicFn), authorizedMethodOptions);
+			.addMethod("GET", new apigw.LambdaIntegration(publicFn), userMethodOptions);
 
 		// ---- /api/admin/users  (admin group only) --------------------------
 		const adminResource = apiResource.addResource("admin");
 		adminResource
 			.addResource("users")
-			.addMethod("GET", new apigw.LambdaIntegration(adminFn), authorizedMethodOptions);
+			.addMethod("GET", new apigw.LambdaIntegration(adminFn), adminMethodOptions);
 
 		// ---- /api/admin/event  (admin group only) --------------------------
-		adminResource
-			.addResource("event")
-			.addMethod("POST", new apigw.LambdaIntegration(createEventFn), authorizedMethodOptions);
+		const eventResource = adminResource.addResource("event");
+		eventResource.addMethod("POST", new apigw.LambdaIntegration(createEventFn), adminMethodOptions);
+		eventResource.addMethod("GET", new apigw.LambdaIntegration(listEventsFn), adminMethodOptions);
+
+		const eventSubdomainResource = eventResource.addResource("{subdomain}");
+		eventSubdomainResource.addMethod("PUT", new apigw.LambdaIntegration(updateEventFn), adminMethodOptions);
+		eventSubdomainResource.addMethod("DELETE", new apigw.LambdaIntegration(deleteEventFn), adminMethodOptions);
 
 		// ------------------------------------------------------------------ //
 		//  7. Stack outputs                                                    //
