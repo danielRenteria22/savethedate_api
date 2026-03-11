@@ -3,14 +3,16 @@ from boto3.dynamodb.conditions import Key
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
+import random
+import string
 
 dynamodb = boto3.resource('dynamodb')
 
 class Guest:
-    def __init__(self, guest_id: str, event_id: str, name: str, phone_code: str, 
+    def __init__(self, confirmation_code: str, event_id: str, name: str, phone_code: str, 
                  phone_number: str, num_guests: int, invitation_sent: bool, 
-                 confirmed_assistance: bool, food_selection: Optional[str], created_at: str):
-        self.guest_id = guest_id
+                 confirmed_assistance: bool, food_selection: Optional[List[str]], created_at: str):
+        self.confirmation_code = confirmation_code
         self.event_id = event_id
         self.name = name
         self.phone_code = phone_code
@@ -24,7 +26,7 @@ class Guest:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Guest':
         return cls(
-            guest_id=data['guest_id'],
+            confirmation_code=data['confirmation_code'],
             event_id=data['event_id'],
             name=data['name'],
             phone_code=data['phone_code'],
@@ -80,11 +82,11 @@ class GuestBuilder:
         return self
     
     def build(self) -> Dict[str, Any]:
-        guest_id = str(uuid.uuid4())
+        confirmation_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
         return {
             'PK': f'EVENT#{self._event_id}',
-            'SK': f'GUEST#{guest_id}',
-            'guest_id': guest_id,
+            'SK': f'GUEST#{confirmation_code}',
+            'confirmation_code': confirmation_code,
             'event_id': self._event_id,
             'name': self._name,
             'phone_code': self._phone_code,
@@ -104,9 +106,9 @@ class GuestDAO:
         self.table.put_item(Item=guest)
         return guest
     
-    def get_guest(self, event_id: str, guest_id: str) -> Optional[Guest]:
+    def get_guest(self, event_id: str, confirmation_code: str) -> Optional[Guest]:
         response = self.table.get_item(
-            Key={'PK': f'EVENT#{event_id}', 'SK': f'GUEST#{guest_id}'}
+            Key={'PK': f'EVENT#{event_id}', 'SK': f'GUEST#{confirmation_code}'}
         )
         item = response.get('Item')
         return Guest.from_dict(item) if item else None
@@ -117,7 +119,7 @@ class GuestDAO:
         )
         return [Guest.from_dict(item) for item in response.get('Items', [])]
     
-    def update_guest(self, event_id: str, guest_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+    def update_guest(self, event_id: str, confirmation_code: str, updates: Dict[str, Any]) -> Dict[str, Any]:
         update_expr = 'SET '
         expr_values = {}
         expr_names = {}
@@ -132,7 +134,7 @@ class GuestDAO:
         update_expr = update_expr.rstrip(', ')
         
         response = self.table.update_item(
-            Key={'PK': f'EVENT#{event_id}', 'SK': f'GUEST#{guest_id}'},
+            Key={'PK': f'EVENT#{event_id}', 'SK': f'GUEST#{confirmation_code}'},
             UpdateExpression=update_expr,
             ExpressionAttributeNames=expr_names,
             ExpressionAttributeValues=expr_values,
@@ -140,7 +142,7 @@ class GuestDAO:
         )
         return response['Attributes']
     
-    def delete_guest(self, event_id: str, guest_id: str) -> None:
+    def delete_guest(self, event_id: str, confirmation_code: str) -> None:
         self.table.delete_item(
-            Key={'PK': f'EVENT#{event_id}', 'SK': f'GUEST#{guest_id}'}
+            Key={'PK': f'EVENT#{event_id}', 'SK': f'GUEST#{confirmation_code}'}
         )

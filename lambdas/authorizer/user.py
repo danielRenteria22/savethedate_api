@@ -86,7 +86,7 @@ def handler(event, context):
 
     groups: list[str] = payload.get("cognito:groups", [])
     
-    if "user" not in groups:
+    if "users" not in groups:
         print(f"Access denied: user lacks user group")
         raise Exception("Unauthorized")
 

@@ -64,3 +64,26 @@ def event(admin_client, event_data):
 
     response = admin_client.delete_event(event_data["subdomain"])
     assert response.status_code == 200
+
+
+@pytest.fixture(scope="session")
+def user_client(admin_client, api_url):
+    """Authenticated user client with test event"""
+    import uuid
+    subdomain = f"e2e_test_event"
+    password = "TestPass123!"
+    
+    admin_client.create_event(
+        subdomain=subdomain,
+        guests_name="Test User",
+        datetime_utc="2026-12-31T20:00:00Z",
+        food_options=["Vegetarian", "Regular"],
+        password=password
+    )
+    
+    client = ApiClient(api_url)
+    client.login(subdomain, password)
+    
+    yield client
+    
+    admin_client.delete_event(subdomain)

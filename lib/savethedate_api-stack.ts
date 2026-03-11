@@ -220,6 +220,40 @@ export class SavethedateApiStack extends cdk.Stack {
 		invitationsTable.grantReadWriteData(updateEventFn);
 		invitationsTable.grantReadWriteData(deleteEventFn);
 
+		// --- Guest Management Lambdas (user group) --------------------------
+		const addGuestFn = new lambda.Function(this, "AddGuestFunction", {
+			...defaultLambdaProps,
+			functionName: "add-guest",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "add_guest.index.handler",
+		});
+
+		const listGuestsFn = new lambda.Function(this, "ListGuestsFunction", {
+			...defaultLambdaProps,
+			functionName: "list-guests",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "list_guests.index.handler",
+		});
+
+		const updateGuestFn = new lambda.Function(this, "UpdateGuestFunction", {
+			...defaultLambdaProps,
+			functionName: "update-guest",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "update_guest.index.handler",
+		});
+
+		const deleteGuestFn = new lambda.Function(this, "DeleteGuestFunction", {
+			...defaultLambdaProps,
+			functionName: "delete-guest",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "delete_guest.index.handler",
+		});
+
+		invitationsTable.grantReadWriteData(addGuestFn);
+		invitationsTable.grantReadWriteData(listGuestsFn);
+		invitationsTable.grantReadWriteData(updateGuestFn);
+		invitationsTable.grantReadWriteData(deleteGuestFn);
+
 		// --- Change Password Lambda (first-time users) ----------------------
 		const changePasswordFn = new lambda.Function(this, "ChangePasswordFunction", {
 			...defaultLambdaProps,
@@ -309,6 +343,16 @@ export class SavethedateApiStack extends cdk.Stack {
 		const eventSubdomainResource = eventResource.addResource("{subdomain}");
 		eventSubdomainResource.addMethod("PUT", new apigw.LambdaIntegration(updateEventFn), adminMethodOptions);
 		eventSubdomainResource.addMethod("DELETE", new apigw.LambdaIntegration(deleteEventFn), adminMethodOptions);
+
+		// ---- /host/guests  (user group) ------------------------------------
+		const hostResource = api.root.addResource("host");
+		const guestsResource = hostResource.addResource("guests");
+		guestsResource.addMethod("POST", new apigw.LambdaIntegration(addGuestFn), userMethodOptions);
+		guestsResource.addMethod("GET", new apigw.LambdaIntegration(listGuestsFn), userMethodOptions);
+
+		const guestIdResource = guestsResource.addResource("{guest_id}");
+		guestIdResource.addMethod("PUT", new apigw.LambdaIntegration(updateGuestFn), userMethodOptions);
+		guestIdResource.addMethod("DELETE", new apigw.LambdaIntegration(deleteGuestFn), userMethodOptions);
 
 		// ------------------------------------------------------------------ //
 		//  7. Stack outputs                                                    //

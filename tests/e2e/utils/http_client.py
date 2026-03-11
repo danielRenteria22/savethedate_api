@@ -105,3 +105,27 @@ class ApiClient:
     def get_admin_users(self):
         """GET /api/admin/users - Admin endpoint (admin only)"""
         return self.session.get(f"{self.base_url}/api/admin/users")
+
+    def add_guest(self, name: str, phone_code: str, phone_number: str, num_guests: int):
+        """POST /host/guests - Add guest"""
+        return self.session.post(
+            f"{self.base_url}/host/guests",
+            json={
+                "name": name,
+                "phone_code": phone_code,
+                "phone_number": phone_number,
+                "num_guests": num_guests
+            }
+        )
+
+    def list_guests(self):
+        """GET /host/guests - List guests"""
+        return self.session.get(f"{self.base_url}/host/guests")
+
+    def update_guest(self, guest_id: str, updates: dict):
+        """PUT /host/guests/{guest_id} - Update guest"""
+        return self.session.put(f"{self.base_url}/host/guests/{guest_id}", json=updates)
+
+    def delete_guest(self, guest_id: str):
+        """DELETE /host/guests/{guest_id} - Delete guest"""
+        return self.session.delete(f"{self.base_url}/host/guests/{guest_id}")
