@@ -7,11 +7,12 @@ dynamodb = boto3.resource('dynamodb')
 
 class Event:
     def __init__(self, subdomain: str, guests_name: str, datetime_utc: str, 
-                 food_options: List[str], created_at: str):
+                 food_options: List[str], message: Optional[str], created_at: str):
         self.subdomain = subdomain
         self.guests_name = guests_name
         self.datetime_utc = datetime_utc
         self.food_options = food_options
+        self.message = message
         self.created_at = created_at
     
     @classmethod
@@ -21,6 +22,7 @@ class Event:
             guests_name=data['guests_name'],
             datetime_utc=data['datetime_utc'],
             food_options=data['food_options'],
+            message=data.get('message'),
             created_at=data['created_at']
         )
 
@@ -30,6 +32,7 @@ class EventBuilder:
         self._guests_name = None
         self._datetime_utc = None
         self._food_options = []
+        self._message = None
     
     def subdomain(self, subdomain: str):
         self._subdomain = subdomain
@@ -47,6 +50,10 @@ class EventBuilder:
         self._food_options = food_options
         return self
     
+    def message(self, message: str):
+        self._message = message
+        return self
+    
     def build(self) -> Dict[str, Any]:
         return {
             'PK': f'EVENT#{self._subdomain}',
@@ -55,6 +62,7 @@ class EventBuilder:
             'guests_name': self._guests_name,
             'datetime_utc': self._datetime_utc,
             'food_options': self._food_options,
+            'message': self._message,
             'created_at': datetime.utcnow().isoformat()
         }
 

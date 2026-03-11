@@ -40,6 +40,7 @@ def handler(event, context):
             .guests_name(body['guests_name'])\
             .datetime_utc(body['datetime_utc'])\
             .food_options(body['food_options'])\
+            .message(body.get('message'))\
             .build()
         
         dao = EventDAO(table_name)

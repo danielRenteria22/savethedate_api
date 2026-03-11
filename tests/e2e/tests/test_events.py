@@ -3,6 +3,7 @@ import pytest
 def test_create_event(event):
     """Test creating an event"""
     assert event["event"]["guests_name"] == "John & Jane"
+    assert event["event"]["message"] == "Join us for our special day!"
 
 
 def test_list_events(admin_client):
@@ -17,11 +18,12 @@ def test_list_events(admin_client):
 def test_update_event(admin_client, event):
     """Test updating an event"""
     
-    updates = {"guests_name": "Updated Name"}
+    updates = {"guests_name": "Updated Name", "message": "Updated message"}
     response = admin_client.update_event(event['event']['subdomain'], updates)
     assert response.status_code == 200
     data = response.json()
     assert data["event"]["guests_name"] == "Updated Name"
+    assert data["event"]["message"] == "Updated message"
 
 
 def test_delete_event(admin_client, event_data):

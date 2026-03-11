@@ -20,6 +20,7 @@ def test_add_guest(user_client, guest_data):
     assert "guest" in data
     assert data["guest"]["name"] == guest_data["name"]
     assert "confirmation_code" in data["guest"]
+    assert data["guest"]["invitation_sent"] == False
 
 
 def test_list_guests(user_client, guest_data):

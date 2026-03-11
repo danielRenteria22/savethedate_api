@@ -48,7 +48,8 @@ def event_data(create_random_subdomain):
         "guests_name": "John & Jane",
         "datetime_utc": "2026-06-15T18:00:00Z",
         "food_options": ["Vegetarian", "Vegan", "Regular"],
-        "password": "TestPass123!"
+        "password": "TestPass123!",
+        "message": "Join us for our special day!"
     }
 
 @pytest.fixture(scope="function")
@@ -78,7 +79,8 @@ def user_client(admin_client, api_url):
         guests_name="Test User",
         datetime_utc="2026-12-31T20:00:00Z",
         food_options=["Vegetarian", "Regular"],
-        password=password
+        password=password,
+        message='foo'
     )
     
     client = ApiClient(api_url)

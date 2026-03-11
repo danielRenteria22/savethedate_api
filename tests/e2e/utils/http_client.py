@@ -66,7 +66,7 @@ class ApiClient:
         return data
 
     def create_event(self, subdomain: str, guests_name: str, datetime_utc: str, 
-                     food_options: list, password: str):
+                     food_options: list, password: str, message: str):
         """POST /events - Create event (admin only)"""
         return self.session.post(
             f"{self.base_url}/api/admin/event",
@@ -75,7 +75,8 @@ class ApiClient:
                 "guests_name": guests_name,
                 "datetime_utc": datetime_utc,
                 "food_options": food_options,
-                "password": password
+                "password": password,
+                "message": message
             }
         )
 
