@@ -17,6 +17,12 @@ def handler(event, context):
         body = json.loads(event['body'])
         
         dao = EventDAO(table_name)
+        if not dao.get_event(subdomain):
+            return {
+                'statusCode': 404,
+                'body': json.dumps({'error': 'Event not found'})
+            }
+        
         updated_event = dao.update_event(subdomain, body)
         
         return {

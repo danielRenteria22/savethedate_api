@@ -20,6 +20,12 @@ def handler(event, context):
         subdomain = event['pathParameters']['subdomain']
         
         dao = EventDAO(table_name)
+        if not dao.get_event(subdomain):
+            return {
+                'statusCode': 404,
+                'body': json.dumps({'error': 'Event not found'})
+            }
+        
         dao.delete_event(subdomain)
         
         # Delete Cognito user
