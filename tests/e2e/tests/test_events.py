@@ -32,6 +32,42 @@ def test_delete_event(admin_client, event_data):
     assert response.status_code == 200
 
 
+def test_delete_event_with_guests(admin_client, event_data, api_url):
+    """Test deleting an event also deletes its guests"""
+    from utils.http_client import ApiClient
+    
+    # Create event
+    admin_client.create_event(**event_data)
+    
+    # Login as event user and add guests
+    user_client = ApiClient(api_url)
+    user_client.login(event_data["subdomain"], event_data["password"])
+    user_client.add_guest("Guest 1", "+1", "1234567890", 2)
+    user_client.add_guest("Guest 2", "+1", "0987654321", 1)
+    
+    # Verify guests exist
+    guests_response = user_client.list_guests()
+    assert guests_response.status_code == 200
+    assert len(guests_response.json()["guests"]) == 2
+    
+    # Delete event
+    response = admin_client.delete_event(event_data["subdomain"])
+    assert response.status_code == 200
+    
+    # Recreate event with same subdomain
+    admin_client.create_event(**event_data)
+    
+    # Login and verify no guests exist
+    new_user_client = ApiClient(api_url)
+    new_user_client.login(event_data["subdomain"], event_data["password"])
+    guests_response = new_user_client.list_guests()
+    assert guests_response.status_code == 200
+    assert len(guests_response.json()["guests"]) == 0
+    
+    # Cleanup
+    admin_client.delete_event(event_data["subdomain"])
+
+
 # Negative Tests - Missing Auth Token
 
 def test_create_event_no_token(api_url, event_data):

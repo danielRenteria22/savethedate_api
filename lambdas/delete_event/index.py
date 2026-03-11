@@ -3,6 +3,7 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 from utils.event_dao import EventDAO
+from utils.guest_dao import GuestDAO
 
 cognito = boto3.client('cognito-idp')
 table_name = os.environ['TABLE_NAME']
@@ -19,14 +20,21 @@ def handler(event, context):
         
         subdomain = event['pathParameters']['subdomain']
         
-        dao = EventDAO(table_name)
-        if not dao.get_event(subdomain):
+        event_dao = EventDAO(table_name)
+        if not event_dao.get_event(subdomain):
             return {
                 'statusCode': 404,
                 'body': json.dumps({'error': 'Event not found'})
             }
         
-        dao.delete_event(subdomain)
+        # Delete all guests for this event
+        guest_dao = GuestDAO(table_name)
+        guests = guest_dao.get_guests_by_event(subdomain)
+        for guest in guests:
+            guest_dao.delete_guest(subdomain, guest.confirmation_code)
+        
+        # Delete event
+        event_dao.delete_event(subdomain)
         
         # Delete Cognito user
         try:
@@ -35,7 +43,7 @@ def handler(event, context):
                 Username=subdomain
             )
         except ClientError:
-            pass  # User might not exist
+            pass
         
         return {
             'statusCode': 200,
