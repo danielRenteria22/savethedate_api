@@ -1,8 +1,14 @@
 import json
 import os
+from decimal import Decimal
 from utils.event_dao import EventDAO
 
 table_name = os.environ['TABLE_NAME']
+
+def decimal_default(obj):
+    if isinstance(obj, Decimal):
+        return int(obj) if obj % 1 == 0 else float(obj)
+    raise TypeError
 
 def handler(event, context):
     try:
@@ -18,7 +24,7 @@ def handler(event, context):
         
         return {
             'statusCode': 200,
-            'body': json.dumps({'events': events})
+            'body': json.dumps({'events': events}, default=decimal_default)
         }
         
     except Exception as e:
