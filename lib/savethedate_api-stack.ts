@@ -254,6 +254,16 @@ export class SavethedateApiStack extends cdk.Stack {
 		invitationsTable.grantReadWriteData(updateGuestFn);
 		invitationsTable.grantReadWriteData(deleteGuestFn);
 
+		// --- Confirm Attendance Lambda (public) -----------------------------
+		const confirmAttendanceFn = new lambda.Function(this, "ConfirmAttendanceFunction", {
+			...defaultLambdaProps,
+			functionName: "confirm-attendance",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "confirm_attendance.index.handler",
+		});
+
+		invitationsTable.grantReadWriteData(confirmAttendanceFn);
+
 		// --- Change Password Lambda (first-time users) ----------------------
 		const changePasswordFn = new lambda.Function(this, "ChangePasswordFunction", {
 			...defaultLambdaProps,
@@ -320,6 +330,13 @@ export class SavethedateApiStack extends cdk.Stack {
 		authResource
 			.addResource("change-password")
 			.addMethod("POST", new apigw.LambdaIntegration(changePasswordFn), {
+				authorizationType: apigw.AuthorizationType.NONE,
+			});
+
+		// ---- /confirm  (public, no authorizer) -----------------------------
+		api.root
+			.addResource("confirm")
+			.addMethod("POST", new apigw.LambdaIntegration(confirmAttendanceFn), {
 				authorizationType: apigw.AuthorizationType.NONE,
 			});
 

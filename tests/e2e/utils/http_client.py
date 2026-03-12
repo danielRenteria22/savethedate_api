@@ -130,3 +130,16 @@ class ApiClient:
     def delete_guest(self, guest_id: str):
         """DELETE /host/guests/{guest_id} - Delete guest"""
         return self.session.delete(f"{self.base_url}/host/guests/{guest_id}")
+
+    def confirm_attendance(self, event_id: str, confirmation_code: str, 
+                          attending_guests: int, food_selection: list):
+        """POST /confirm - Confirm attendance (public)"""
+        return self.session.post(
+            f"{self.base_url}/confirm",
+            json={
+                "event_id": event_id,
+                "confirmation_code": confirmation_code,
+                "attending_guests": attending_guests,
+                "food_selection": food_selection
+            }
+        )

@@ -11,7 +11,8 @@ dynamodb = boto3.resource('dynamodb')
 class Guest:
     def __init__(self, confirmation_code: str, event_id: str, name: str, phone_code: str, 
                  phone_number: str, num_guests: int, invitation_sent: bool, 
-                 confirmed_assistance: bool, food_selection: Optional[List[str]], created_at: str):
+                 confirmed_assistance: bool, attending_guests: Optional[int],
+                 food_selection: Optional[List[str]], created_at: str):
         self.confirmation_code = confirmation_code
         self.event_id = event_id
         self.name = name
@@ -20,6 +21,7 @@ class Guest:
         self.num_guests = num_guests
         self.invitation_sent = invitation_sent
         self.confirmed_assistance = confirmed_assistance
+        self.attending_guests = attending_guests
         self.food_selection = food_selection
         self.created_at = created_at
     
@@ -34,6 +36,7 @@ class Guest:
             num_guests=data['num_guests'],
             invitation_sent=data['invitation_sent'],
             confirmed_assistance=data['confirmed_assistance'],
+            attending_guests=data.get('attending_guests'),
             food_selection=data.get('food_selection'),
             created_at=data['created_at']
         )
