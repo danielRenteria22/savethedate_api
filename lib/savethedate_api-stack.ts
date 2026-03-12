@@ -254,6 +254,16 @@ export class SavethedateApiStack extends cdk.Stack {
 		invitationsTable.grantReadWriteData(updateGuestFn);
 		invitationsTable.grantReadWriteData(deleteGuestFn);
 
+		// --- Update My Event Lambda (user group) ----------------------------
+		const updateMyEventFn = new lambda.Function(this, "UpdateMyEventFunction", {
+			...defaultLambdaProps,
+			functionName: "update-my-event",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "update_my_event.index.handler",
+		});
+
+		invitationsTable.grantReadWriteData(updateMyEventFn);
+
 		// --- Confirm Attendance Lambda (public) -----------------------------
 		const confirmAttendanceFn = new lambda.Function(this, "ConfirmAttendanceFunction", {
 			...defaultLambdaProps,
@@ -370,6 +380,11 @@ export class SavethedateApiStack extends cdk.Stack {
 		const guestIdResource = guestsResource.addResource("{guest_id}");
 		guestIdResource.addMethod("PUT", new apigw.LambdaIntegration(updateGuestFn), userMethodOptions);
 		guestIdResource.addMethod("DELETE", new apigw.LambdaIntegration(deleteGuestFn), userMethodOptions);
+
+		// ---- /host/event  (user group) -------------------------------------
+		hostResource
+			.addResource("event")
+			.addMethod("PUT", new apigw.LambdaIntegration(updateMyEventFn), userMethodOptions);
 
 		// ------------------------------------------------------------------ //
 		//  7. Stack outputs                                                    //
