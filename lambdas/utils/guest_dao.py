@@ -12,7 +12,8 @@ class Guest:
     def __init__(self, confirmation_code: str, event_id: str, name: str, phone_code: str, 
                  phone_number: str, num_guests: int, invitation_sent: bool, 
                  confirmed_assistance: bool, attending_guests: Optional[int],
-                 food_selection: Optional[List[str]], created_at: str):
+                 food_selection: Optional[List[str]], created_at: str,
+                 invitation_sent_fatal_error: bool = False):
         self.confirmation_code = confirmation_code
         self.event_id = event_id
         self.name = name
@@ -24,6 +25,7 @@ class Guest:
         self.attending_guests = attending_guests
         self.food_selection = food_selection
         self.created_at = created_at
+        self.invitation_sent_fatal_error = invitation_sent_fatal_error
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Guest':
@@ -38,7 +40,8 @@ class Guest:
             confirmed_assistance=data['confirmed_assistance'],
             attending_guests=data.get('attending_guests'),
             food_selection=data.get('food_selection'),
-            created_at=data['created_at']
+            created_at=data['created_at'],
+            invitation_sent_fatal_error=data.get('invitation_sent_fatal_error', False)
         )
 
 class GuestBuilder:
@@ -49,6 +52,7 @@ class GuestBuilder:
         self._phone_number = None
         self._num_guests = None
         self._invitation_sent = False
+        self._invitation_sent_fatal_error = False
         self._confirmed_assistance = False
         self._food_selection = None
     
@@ -96,6 +100,7 @@ class GuestBuilder:
             'phone_number': self._phone_number,
             'num_guests': self._num_guests,
             'invitation_sent': self._invitation_sent,
+            'invitation_sent_fatal_error': self._invitation_sent_fatal_error,
             'confirmed_assistance': self._confirmed_assistance,
             'food_selection': self._food_selection,
             'created_at': datetime.utcnow().isoformat()

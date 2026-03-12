@@ -147,3 +147,10 @@ class ApiClient:
                 "food_selection": food_selection
             }
         )
+
+    def send_invitation(self, confirmation_code: str):
+        """POST /host/send-invitation - Send WhatsApp invitation"""
+        return self.session.post(
+            f"{self.base_url}/host/send-invitation",
+            json={"confirmation_code": confirmation_code}
+        )

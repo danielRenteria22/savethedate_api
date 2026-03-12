@@ -7,6 +7,9 @@ import * as apigw from "aws-cdk-lib/aws-apigateway";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 export class SavethedateApiStack extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -71,8 +74,27 @@ export class SavethedateApiStack extends cdk.Stack {
 		});
 
 		// ------------------------------------------------------------------ //
+		//  2.6. SQS Queue for Invitations                                      //
+		// ------------------------------------------------------------------ //
+		const invitationDLQ = new sqs.Queue(this, "InvitationDLQ", {
+			queueName: "invitation-dlq",
+			retentionPeriod: cdk.Duration.days(14)
+		});
+
+		const invitationQueue = new sqs.Queue(this, "InvitationQueue", {
+			queueName: "invitation-queue",
+			visibilityTimeout: cdk.Duration.seconds(90),
+			deadLetterQueue: {
+				queue: invitationDLQ,
+				maxReceiveCount: 3
+			}
+		});
+
+		// ------------------------------------------------------------------ //
 		//  3. Shared Lambda environment variables                              //
 		// ------------------------------------------------------------------ //
+		const twilioSecretName = "twilio-credentials";
+		
 		const commonEnv: Record<string, string> = {
 			USER_POOL_ID: userPool.userPoolId,
 			CLIENT_ID: userPoolClient.userPoolClientId,
@@ -274,6 +296,58 @@ export class SavethedateApiStack extends cdk.Stack {
 
 		invitationsTable.grantReadWriteData(confirmAttendanceFn);
 
+		// --- Send Invitation Lambda (user group) ----------------------------
+		const sendInvitationFn = new lambda.Function(this, "SendInvitationFunction", {
+			...defaultLambdaProps,
+			functionName: "send-invitation",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "send_invitation.index.handler",
+			environment: {
+				...commonEnv,
+				QUEUE_URL: invitationQueue.queueUrl
+			}
+		});
+
+		invitationQueue.grantSendMessages(sendInvitationFn);
+
+		// --- Twilio Callback Lambda (public) --------------------------------
+		const twilioCallbackFn = new lambda.Function(this, "TwilioCallbackFunction", {
+			...defaultLambdaProps,
+			functionName: "twilio-callback",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "twilio_callback.index.handler",
+		});
+
+		invitationsTable.grantReadWriteData(twilioCallbackFn);
+
+		// --- Process Invitation Lambda (SQS consumer) -----------------------
+		const processInvitationFn = new lambda.Function(this, "ProcessInvitationFunction", {
+			...defaultLambdaProps,
+			functionName: "process-invitation",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "process_invitation.index.handler",
+			timeout: cdk.Duration.seconds(60),
+			environment: {
+				...commonEnv,
+				TWILIO_SECRET_NAME: twilioSecretName,
+				CALLBACK_URL: "" // Will be set after API creation
+			}
+		});
+
+		processInvitationFn.addEventSource(new lambdaEventSources.SqsEventSource(invitationQueue, {
+			batchSize: 10,
+			reportBatchItemFailures: true
+		}));
+
+		invitationsTable.grantReadWriteData(processInvitationFn);
+
+		processInvitationFn.addToRolePolicy(
+			new iam.PolicyStatement({
+				actions: ["secretsmanager:GetSecretValue"],
+				resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:${twilioSecretName}-*`]
+			})
+		);
+
 		// --- Change Password Lambda (first-time users) ----------------------
 		const changePasswordFn = new lambda.Function(this, "ChangePasswordFunction", {
 			...defaultLambdaProps,
@@ -386,6 +460,22 @@ export class SavethedateApiStack extends cdk.Stack {
 			.addResource("event")
 			.addMethod("PUT", new apigw.LambdaIntegration(updateMyEventFn), userMethodOptions);
 
+		// ---- /host/send-invitation  (user group) ---------------------------
+		hostResource
+			.addResource("send-invitation")
+			.addMethod("POST", new apigw.LambdaIntegration(sendInvitationFn), userMethodOptions);
+
+		// ---- /callback/twilio  (public, no authorizer) ---------------------
+		const callbackResource = api.root.addResource("callback");
+		callbackResource
+			.addResource("twilio")
+			.addMethod("POST", new apigw.LambdaIntegration(twilioCallbackFn), {
+				authorizationType: apigw.AuthorizationType.NONE,
+			});
+
+		// Update process invitation Lambda with callback URL
+		processInvitationFn.addEnvironment("CALLBACK_URL", `${api.url}callback/twilio`);
+
 		// ------------------------------------------------------------------ //
 		//  7. Stack outputs                                                    //
 		// ------------------------------------------------------------------ //
@@ -394,5 +484,7 @@ export class SavethedateApiStack extends cdk.Stack {
 		new cdk.CfnOutput(this, "ApiUrl", { value: api.url });
 		new cdk.CfnOutput(this, "LoginEndpoint", { value: `${api.url}auth/login` });
 		new cdk.CfnOutput(this, "TableName", { value: invitationsTable.tableName });
+		new cdk.CfnOutput(this, "InvitationQueueUrl", { value: invitationQueue.queueUrl });
+		new cdk.CfnOutput(this, "TwilioCallbackUrl", { value: `${api.url}callback/twilio` });
 	}
 }
