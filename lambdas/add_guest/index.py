@@ -27,13 +27,19 @@ def handler(event, context):
         if not isinstance(body['num_guests'], int) or body['num_guests'] < 1:
             return cors_response(400, {'error': 'num_guests must be an integer >= 1'})
         
-        guest_data = GuestBuilder()\
+        builder = GuestBuilder()\
             .event_id(subdomain)\
             .name(body['name'])\
             .phone_code(body['phone_code'])\
             .phone_number(body['phone_number'])\
-            .num_guests(body['num_guests'])\
-            .build()
+            .num_guests(body['num_guests'])
+        
+        if 'civil_wedding_invitation' in body:
+            builder = builder.civil_wedding_invitation(bool(body['civil_wedding_invitation']))
+        if 'after_party_invitation' in body:
+            builder = builder.after_party_invitation(bool(body['after_party_invitation']))
+        
+        guest_data = builder.build()
         
         dao = GuestDAO(table_name)
         created_guest = dao.create_guest(guest_data)

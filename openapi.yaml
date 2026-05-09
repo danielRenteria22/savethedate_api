@@ -68,6 +68,12 @@ components:
           items:
             type: string
           nullable: true
+        civil_wedding_invitation:
+          type: boolean
+          default: false
+        after_party_invitation:
+          type: boolean
+          default: false
 
 paths:
   /auth/login:
@@ -286,6 +292,12 @@ paths:
                   type: string
                 num_guests:
                   type: integer
+                civil_wedding_invitation:
+                  type: boolean
+                  default: false
+                after_party_invitation:
+                  type: boolean
+                  default: false
       responses:
         '201':
           description: Created

@@ -13,7 +13,9 @@ class Guest:
                  phone_number: str, num_guests: int, invitation_sent: bool, 
                  confirmed_assistance: bool, attending_guests: Optional[int],
                  food_selection: Optional[List[str]], created_at: str,
-                 invitation_sent_fatal_error: bool = False):
+                 invitation_sent_fatal_error: bool = False,
+                 civil_wedding_invitation: bool = False,
+                 after_party_invitation: bool = False):
         self.confirmation_code = confirmation_code
         self.event_id = event_id
         self.name = name
@@ -26,6 +28,8 @@ class Guest:
         self.food_selection = food_selection
         self.created_at = created_at
         self.invitation_sent_fatal_error = invitation_sent_fatal_error
+        self.civil_wedding_invitation = civil_wedding_invitation
+        self.after_party_invitation = after_party_invitation
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Guest':
@@ -41,7 +45,9 @@ class Guest:
             attending_guests=data.get('attending_guests'),
             food_selection=data.get('food_selection'),
             created_at=data['created_at'],
-            invitation_sent_fatal_error=data.get('invitation_sent_fatal_error', False)
+            invitation_sent_fatal_error=data.get('invitation_sent_fatal_error', False),
+            civil_wedding_invitation=data.get('civil_wedding_invitation', False),
+            after_party_invitation=data.get('after_party_invitation', False)
         )
 
 class GuestBuilder:
@@ -55,6 +61,8 @@ class GuestBuilder:
         self._invitation_sent_fatal_error = False
         self._confirmed_assistance = False
         self._food_selection = None
+        self._civil_wedding_invitation = False
+        self._after_party_invitation = False
     
     def event_id(self, event_id: str):
         self._event_id = event_id
@@ -88,6 +96,14 @@ class GuestBuilder:
         self._food_selection = food_selection
         return self
     
+    def civil_wedding_invitation(self, civil_wedding_invitation: bool):
+        self._civil_wedding_invitation = civil_wedding_invitation
+        return self
+    
+    def after_party_invitation(self, after_party_invitation: bool):
+        self._after_party_invitation = after_party_invitation
+        return self
+    
     def build(self) -> Dict[str, Any]:
         confirmation_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
         return {
@@ -103,6 +119,8 @@ class GuestBuilder:
             'invitation_sent_fatal_error': self._invitation_sent_fatal_error,
             'confirmed_assistance': self._confirmed_assistance,
             'food_selection': self._food_selection,
+            'civil_wedding_invitation': self._civil_wedding_invitation,
+            'after_party_invitation': self._after_party_invitation,
             'created_at': datetime.utcnow().isoformat()
         }
 
