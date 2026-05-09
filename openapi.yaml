@@ -1,0 +1,424 @@
+openapi: 3.0.0
+info:
+  title: SaveTheDate API
+  version: 1.0.0
+  description: API for managing events and guest invitations
+
+servers:
+  - url: https://22tp7n0qdg.execute-api.us-east-2.amazonaws.com/v1
+    description: Production
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    Event:
+      type: object
+      properties:
+        subdomain:
+          type: string
+        guests_name:
+          type: string
+        datetime_utc:
+          type: string
+          format: date-time
+        food_options:
+          type: array
+          items:
+            type: string
+        message:
+          type: string
+
+    Guest:
+      type: object
+      properties:
+        confirmation_code:
+          type: string
+        event_id:
+          type: string
+        name:
+          type: string
+        phone_code:
+          type: string
+        phone_number:
+          type: string
+        num_guests:
+          type: integer
+        invitation_sent:
+          type: boolean
+        invitation_sent_fatal_error:
+          type: boolean
+        confirmed_assistance:
+          type: boolean
+        attending_guests:
+          type: integer
+          nullable: true
+        food_selection:
+          type: array
+          items:
+            type: string
+          nullable: true
+
+paths:
+  /auth/login:
+    post:
+      summary: Login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  id_token:
+                    type: string
+                  refresh_token:
+                    type: string
+
+  /auth/change-password:
+    post:
+      summary: Change password
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, session, newPassword]
+              properties:
+                username:
+                  type: string
+                session:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Success
+
+  /confirm:
+    post:
+      summary: Confirm attendance
+      tags: [Public]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_id, confirmation_code, attending_guests, food_selection]
+              properties:
+                event_id:
+                  type: string
+                confirmation_code:
+                  type: string
+                attending_guests:
+                  type: integer
+                food_selection:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Success
+
+  /api/data:
+    get:
+      summary: Get public data
+      tags: [User]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+
+  /api/admin/users:
+    get:
+      summary: List users
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+
+  /api/admin/event:
+    post:
+      summary: Create event
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subdomain, guests_name, datetime_utc, food_options, password, message]
+              properties:
+                subdomain:
+                  type: string
+                guests_name:
+                  type: string
+                datetime_utc:
+                  type: string
+                  format: date-time
+                food_options:
+                  type: array
+                  items:
+                    type: string
+                password:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    $ref: '#/components/schemas/Event'
+
+    get:
+      summary: List events
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+
+  /api/admin/event/{subdomain}:
+    put:
+      summary: Update event
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Success
+
+    delete:
+      summary: Delete event
+      tags: [Admin]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+
+  /host/guests:
+    post:
+      summary: Add guest
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone_code, phone_number, num_guests]
+              properties:
+                name:
+                  type: string
+                phone_code:
+                  type: string
+                phone_number:
+                  type: string
+                num_guests:
+                  type: integer
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guest:
+                    $ref: '#/components/schemas/Guest'
+
+    get:
+      summary: List guests
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Guest'
+
+  /host/guests/{guest_id}:
+    put:
+      summary: Update guest
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: guest_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Success
+
+    delete:
+      summary: Delete guest
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: guest_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+
+  /host/event:
+    put:
+      summary: Update my event
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Success
+
+  /host/send-invitation:
+    post:
+      summary: Send WhatsApp invitation
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation_code]
+              properties:
+                confirmation_code:
+                  type: string
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /callback/twilio:
+    post:
+      summary: Twilio webhook callback
+      tags: [Webhook]
+      parameters:
+        - name: event_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: confirmation_code
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                MessageStatus:
+                  type: string
+      responses:
+        '200':
+          description: Success
