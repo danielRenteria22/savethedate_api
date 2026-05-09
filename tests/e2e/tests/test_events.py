@@ -6,13 +6,20 @@ def test_create_event(event):
     assert event["event"]["message"] == "Join us for our special day!"
 
 
-def test_list_events(admin_client):
-    """Test listing all events"""
+def test_list_events(admin_client, event):
+    """Test listing all events returns only events with correct format"""
     response = admin_client.list_events()
     assert response.status_code == 200
-    data = response.json()
-    assert "events" in data
-    assert isinstance(data["events"], list)
+    events = response.json()["events"]
+    assert isinstance(events, list)
+    assert len(events) > 0
+
+    event_fields = {"subdomain", "guests_name", "datetime_utc", "food_options", "created_at"}
+    guest_only_fields = {"confirmation_code", "phone_number", "phone_code", "num_guests", "invitation_sent"}
+
+    for e in events:
+        assert event_fields.issubset(e.keys()), f"Event missing expected fields: {e}"
+        assert not guest_only_fields.intersection(e.keys()), f"Guest data found in event list: {e}"
 
 
 def test_update_event(admin_client, event):

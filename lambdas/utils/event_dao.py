@@ -111,7 +111,7 @@ class EventDAO:
     
     def list_events(self) -> List[Dict[str, Any]]:
         response = self.table.scan(
-            FilterExpression='begins_with(PK, :pk)',
-            ExpressionAttributeValues={':pk': 'EVENT#'}
+            FilterExpression='begins_with(PK, :pk) AND begins_with(SK, :sk)',
+            ExpressionAttributeValues={':pk': 'EVENT#', ':sk': 'EVENT#'}
         )
         return response.get('Items', [])
