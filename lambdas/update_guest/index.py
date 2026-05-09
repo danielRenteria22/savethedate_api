@@ -2,6 +2,7 @@ import json
 import os
 from decimal import Decimal
 from utils.guest_dao import GuestDAO
+from utils.response import cors_response
 
 table_name = os.environ['TABLE_NAME']
 
@@ -20,26 +21,16 @@ def handler(event, context):
         guest = dao.get_guest(subdomain, confirmation_code)
         
         if not guest:
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'error': 'Guest not found'})
-            }
+            return cors_response(404, {'error': 'Guest not found'})
         
         if guest.confirmed_assistance:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'Cannot update confirmed guest'})
-            }
+            return cors_response(400, {'error': 'Cannot update confirmed guest'})
         
         updated_guest = dao.update_guest(subdomain, confirmation_code, body)
         
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'guest': updated_guest}, default=decimal_default)
-        }
+        response = cors_response(200, {'guest': updated_guest})
+        response['body'] = json.dumps({'guest': updated_guest}, default=decimal_default)
+        return response
         
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
-        }
+        return cors_response(500, {'error': str(e)})

@@ -1,6 +1,7 @@
 import json
 import os
 from utils.guest_dao import GuestDAO
+from utils.response import cors_response
 
 table_name = os.environ['TABLE_NAME']
 
@@ -13,20 +14,11 @@ def handler(event, context):
         guest = dao.get_guest(subdomain, confirmation_code)
         
         if not guest:
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'error': 'Guest not found'})
-            }
+            return cors_response(404, {'error': 'Guest not found'})
         
         dao.delete_guest(subdomain, confirmation_code)
         
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'message': 'Guest deleted successfully'})
-        }
+        return cors_response(200, {'message': 'Guest deleted successfully'})
         
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
-        }
+        return cors_response(500, {'error': str(e)})

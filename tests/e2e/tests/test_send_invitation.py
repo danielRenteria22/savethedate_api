@@ -27,6 +27,4 @@ def test_send_invitation(user_client):
     print(f"  Confirmation code: {confirmation_code}")
     print(f"  Phone: {guest['phone_code']}{guest['phone_number']}")
 
-    time.sleep(300)
-
 
