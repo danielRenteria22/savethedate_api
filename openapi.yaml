@@ -54,10 +54,9 @@ components:
           type: string
         num_guests:
           type: integer
-        invitation_sent:
-          type: boolean
-        invitation_sent_fatal_error:
-          type: boolean
+        invitation_status:
+          type: string
+          enum: [NOT_SENT, IN_PROGRESS, FAILED, SUCCESS]
         confirmed_assistance:
           type: boolean
         attending_guests:

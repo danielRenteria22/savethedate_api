@@ -2,18 +2,17 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-import uuid
 import random
 import string
+from utils.enums import InvitationStatus
 
 dynamodb = boto3.resource('dynamodb')
 
 class Guest:
     def __init__(self, confirmation_code: str, event_id: str, name: str, phone_code: str, 
-                 phone_number: str, num_guests: int, invitation_sent: bool, 
+                 phone_number: str, num_guests: int, invitation_status: str,
                  confirmed_assistance: bool, attending_guests: Optional[int],
                  food_selection: Optional[List[str]], created_at: str,
-                 invitation_sent_fatal_error: bool = False,
                  civil_wedding_invitation: bool = False,
                  after_party_invitation: bool = False):
         self.confirmation_code = confirmation_code
@@ -22,12 +21,11 @@ class Guest:
         self.phone_code = phone_code
         self.phone_number = phone_number
         self.num_guests = num_guests
-        self.invitation_sent = invitation_sent
+        self.invitation_status = invitation_status
         self.confirmed_assistance = confirmed_assistance
         self.attending_guests = attending_guests
         self.food_selection = food_selection
         self.created_at = created_at
-        self.invitation_sent_fatal_error = invitation_sent_fatal_error
         self.civil_wedding_invitation = civil_wedding_invitation
         self.after_party_invitation = after_party_invitation
     
@@ -40,12 +38,11 @@ class Guest:
             phone_code=data['phone_code'],
             phone_number=data['phone_number'],
             num_guests=data['num_guests'],
-            invitation_sent=data['invitation_sent'],
+            invitation_status=data.get('invitation_status', InvitationStatus.NOT_SENT),
             confirmed_assistance=data['confirmed_assistance'],
             attending_guests=data.get('attending_guests'),
             food_selection=data.get('food_selection'),
             created_at=data['created_at'],
-            invitation_sent_fatal_error=data.get('invitation_sent_fatal_error', False),
             civil_wedding_invitation=data.get('civil_wedding_invitation', False),
             after_party_invitation=data.get('after_party_invitation', False)
         )
@@ -57,8 +54,6 @@ class GuestBuilder:
         self._phone_code = None
         self._phone_number = None
         self._num_guests = None
-        self._invitation_sent = False
-        self._invitation_sent_fatal_error = False
         self._confirmed_assistance = False
         self._food_selection = None
         self._civil_wedding_invitation = False
@@ -84,18 +79,6 @@ class GuestBuilder:
         self._num_guests = num_guests
         return self
     
-    def invitation_sent(self, invitation_sent: bool):
-        self._invitation_sent = invitation_sent
-        return self
-    
-    def confirmed_assistance(self, confirmed_assistance: bool):
-        self._confirmed_assistance = confirmed_assistance
-        return self
-    
-    def food_selection(self, food_selection: str):
-        self._food_selection = food_selection
-        return self
-    
     def civil_wedding_invitation(self, civil_wedding_invitation: bool):
         self._civil_wedding_invitation = civil_wedding_invitation
         return self
@@ -115,8 +98,7 @@ class GuestBuilder:
             'phone_code': self._phone_code,
             'phone_number': self._phone_number,
             'num_guests': self._num_guests,
-            'invitation_sent': self._invitation_sent,
-            'invitation_sent_fatal_error': self._invitation_sent_fatal_error,
+            'invitation_status': InvitationStatus.NOT_SENT,
             'confirmed_assistance': self._confirmed_assistance,
             'food_selection': self._food_selection,
             'civil_wedding_invitation': self._civil_wedding_invitation,

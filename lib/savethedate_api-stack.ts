@@ -319,6 +319,7 @@ export class SavethedateApiStack extends cdk.Stack {
 		});
 
 		invitationQueue.grantSendMessages(sendInvitationFn);
+		invitationsTable.grantReadWriteData(sendInvitationFn);
 
 		// --- Twilio Callback Lambda (public) --------------------------------
 		const twilioCallbackFn = new lambda.Function(this, "TwilioCallbackFunction", {

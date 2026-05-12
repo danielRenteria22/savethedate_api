@@ -4,6 +4,7 @@ import boto3
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
 from utils.guest_dao import GuestDAO
+from utils.enums import InvitationStatus
 
 table_name = os.environ['TABLE_NAME']
 secret_name = os.environ['TWILIO_SECRET_NAME']
@@ -44,12 +45,12 @@ def handler(event, context):
             )
             
             if twilio_message.status in ['queued', 'sent', 'delivered']:
-                dao.update_guest(event_id, confirmation_code, {'invitation_sent': True})
+                dao.update_guest(event_id, confirmation_code, {'invitation_status': InvitationStatus.SUCCESS})
             else:
                 print(f"Message failed with status: {twilio_message.status}")
                 receive_count = int(record['attributes'].get('ApproximateReceiveCount', 0))
                 if receive_count >= 3:
-                    dao.update_guest(event_id, confirmation_code, {'invitation_sent_fatal_error': True})
+                    dao.update_guest(event_id, confirmation_code, {'invitation_status': InvitationStatus.FAILED})
                 else:
                     batch_item_failures.append({'itemIdentifier': record['messageId']})
             
@@ -59,11 +60,8 @@ def handler(event, context):
             if receive_count >= 3:
                 try:
                     message = json.loads(record['body'])
-                    dao.update_guest(
-                        message['event_id'], 
-                        message['confirmation_code'], 
-                        {'invitation_sent_fatal_error': True}
-                    )
+                    dao.update_guest(message['event_id'], message['confirmation_code'], 
+                                     {'invitation_status': InvitationStatus.FAILED})
                 except:
                     pass
             else:
@@ -74,11 +72,8 @@ def handler(event, context):
             if receive_count >= 3:
                 try:
                     message = json.loads(record['body'])
-                    dao.update_guest(
-                        message['event_id'], 
-                        message['confirmation_code'], 
-                        {'invitation_sent_fatal_error': True}
-                    )
+                    dao.update_guest(message['event_id'], message['confirmation_code'], 
+                                     {'invitation_status': InvitationStatus.FAILED})
                 except:
                     pass
             else:
