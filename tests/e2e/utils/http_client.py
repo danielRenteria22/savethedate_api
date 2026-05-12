@@ -134,6 +134,10 @@ class ApiClient:
         """DELETE /host/guests/{guest_id} - Delete guest"""
         return self.session.delete(f"{self.base_url}/host/guests/{guest_id}")
 
+    def get_my_event(self):
+        """GET /host/event - Get my event (user)"""
+        return self.session.get(f"{self.base_url}/host/event")
+
     def update_my_event(self, updates: dict):
         """PUT /host/event - Update my event (user)"""
         return self.session.put(f"{self.base_url}/host/event", json=updates)

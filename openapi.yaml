@@ -365,6 +365,28 @@ paths:
           description: Success
 
   /host/event:
+    get:
+      summary: Get my event
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    $ref: '#/components/schemas/Event'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
     put:
       summary: Update my event
       tags: [Host]
@@ -376,6 +398,13 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                  message:
+                    type: string
+                  food_options:
+                    type: array
+                    items:
+                      type: string
       responses:
         '200':
           description: Success
