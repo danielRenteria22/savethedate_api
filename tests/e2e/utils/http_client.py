@@ -108,19 +108,20 @@ class ApiClient:
         return self.session.get(f"{self.base_url}/api/admin/users")
 
     def add_guest(self, name: str, phone_code: str, phone_number: str, num_guests: int,
-                  civil_wedding_invitation: bool = False, after_party_invitation: bool = False):
+                  civil_wedding_invitation: bool = False, after_party_invitation: bool = False,
+                  table: str = None):
         """POST /host/guests - Add guest"""
-        return self.session.post(
-            f"{self.base_url}/host/guests",
-            json={
-                "name": name,
-                "phone_code": phone_code,
-                "phone_number": phone_number,
-                "num_guests": num_guests,
-                "civil_wedding_invitation": civil_wedding_invitation,
-                "after_party_invitation": after_party_invitation
-            }
-        )
+        payload = {
+            "name": name,
+            "phone_code": phone_code,
+            "phone_number": phone_number,
+            "num_guests": num_guests,
+            "civil_wedding_invitation": civil_wedding_invitation,
+            "after_party_invitation": after_party_invitation
+        }
+        if table is not None:
+            payload["table"] = table
+        return self.session.post(f"{self.base_url}/host/guests", json=payload)
 
     def list_guests(self):
         """GET /host/guests - List guests"""

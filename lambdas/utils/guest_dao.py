@@ -14,7 +14,8 @@ class Guest:
                  confirmed_assistance: bool, attending_guests: Optional[int],
                  food_selection: Optional[List[str]], created_at: str,
                  civil_wedding_invitation: bool = False,
-                 after_party_invitation: bool = False):
+                 after_party_invitation: bool = False,
+                 table: Optional[str] = None):
         self.confirmation_code = confirmation_code
         self.event_id = event_id
         self.name = name
@@ -28,6 +29,7 @@ class Guest:
         self.created_at = created_at
         self.civil_wedding_invitation = civil_wedding_invitation
         self.after_party_invitation = after_party_invitation
+        self.table = table
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Guest':
@@ -44,7 +46,8 @@ class Guest:
             food_selection=data.get('food_selection'),
             created_at=data['created_at'],
             civil_wedding_invitation=data.get('civil_wedding_invitation', False),
-            after_party_invitation=data.get('after_party_invitation', False)
+            after_party_invitation=data.get('after_party_invitation', False),
+            table=data.get('table')
         )
 
 class GuestBuilder:
@@ -58,6 +61,7 @@ class GuestBuilder:
         self._food_selection = None
         self._civil_wedding_invitation = False
         self._after_party_invitation = False
+        self._table = None
     
     def event_id(self, event_id: str):
         self._event_id = event_id
@@ -87,6 +91,10 @@ class GuestBuilder:
         self._after_party_invitation = after_party_invitation
         return self
     
+    def table(self, table: str):
+        self._table = table
+        return self
+    
     def build(self) -> Dict[str, Any]:
         confirmation_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
         return {
@@ -103,6 +111,7 @@ class GuestBuilder:
             'food_selection': self._food_selection,
             'civil_wedding_invitation': self._civil_wedding_invitation,
             'after_party_invitation': self._after_party_invitation,
+            'table': self._table,
             'created_at': datetime.utcnow().isoformat()
         }
 

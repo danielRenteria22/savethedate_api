@@ -38,6 +38,8 @@ def handler(event, context):
             builder = builder.civil_wedding_invitation(bool(body['civil_wedding_invitation']))
         if 'after_party_invitation' in body:
             builder = builder.after_party_invitation(bool(body['after_party_invitation']))
+        if 'table' in body:
+            builder = builder.table(body['table'])
         
         guest_data = builder.build()
         

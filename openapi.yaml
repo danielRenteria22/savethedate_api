@@ -73,6 +73,9 @@ components:
         after_party_invitation:
           type: boolean
           default: false
+        table:
+          type: string
+          nullable: true
 
 paths:
   /auth/login:
@@ -297,6 +300,8 @@ paths:
                 after_party_invitation:
                   type: boolean
                   default: false
+                table:
+                  type: string
       responses:
         '201':
           description: Created
