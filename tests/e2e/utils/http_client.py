@@ -162,3 +162,10 @@ class ApiClient:
             f"{self.base_url}/host/send-invitation",
             json={"confirmation_code": confirmation_code}
         )
+
+    def checkin_guest(self, guest_id: str):
+        """POST /host/checkin - Check in a guest"""
+        return self.session.post(
+            f"{self.base_url}/host/checkin",
+            json={"guest_id": guest_id}
+        )

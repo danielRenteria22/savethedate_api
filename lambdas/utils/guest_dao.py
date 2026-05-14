@@ -15,7 +15,8 @@ class Guest:
                  food_selection: Optional[List[str]], created_at: str,
                  civil_wedding_invitation: bool = False,
                  after_party_invitation: bool = False,
-                 table: Optional[str] = None):
+                 table: Optional[str] = None,
+                 checked_in: bool = False):
         self.confirmation_code = confirmation_code
         self.event_id = event_id
         self.name = name
@@ -30,6 +31,7 @@ class Guest:
         self.civil_wedding_invitation = civil_wedding_invitation
         self.after_party_invitation = after_party_invitation
         self.table = table
+        self.checked_in = checked_in
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Guest':
@@ -47,7 +49,8 @@ class Guest:
             created_at=data['created_at'],
             civil_wedding_invitation=data.get('civil_wedding_invitation', False),
             after_party_invitation=data.get('after_party_invitation', False),
-            table=data.get('table')
+            table=data.get('table'),
+            checked_in=data.get('checked_in', False)
         )
 
 class GuestBuilder:
@@ -112,6 +115,7 @@ class GuestBuilder:
             'civil_wedding_invitation': self._civil_wedding_invitation,
             'after_party_invitation': self._after_party_invitation,
             'table': self._table,
+            'checked_in': False,
             'created_at': datetime.utcnow().isoformat()
         }
 

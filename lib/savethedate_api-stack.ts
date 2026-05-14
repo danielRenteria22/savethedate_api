@@ -276,6 +276,16 @@ export class SavethedateApiStack extends cdk.Stack {
 		invitationsTable.grantReadWriteData(updateGuestFn);
 		invitationsTable.grantReadWriteData(deleteGuestFn);
 
+		// --- Checkin Guest Lambda (user group) -------------------------------
+		const checkinGuestFn = new lambda.Function(this, "CheckinGuestFunction", {
+			...defaultLambdaProps,
+			functionName: "checkin-guest",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "checkin_guest.index.handler",
+		});
+
+		invitationsTable.grantReadWriteData(checkinGuestFn);
+
 		// --- Update My Event Lambda (user group) ----------------------------
 		const updateMyEventFn = new lambda.Function(this, "UpdateMyEventFunction", {
 			...defaultLambdaProps,
@@ -465,6 +475,11 @@ export class SavethedateApiStack extends cdk.Stack {
 		const guestIdResource = guestsResource.addResource("{guest_id}");
 		guestIdResource.addMethod("PUT", new apigw.LambdaIntegration(updateGuestFn), userMethodOptions);
 		guestIdResource.addMethod("DELETE", new apigw.LambdaIntegration(deleteGuestFn), userMethodOptions);
+
+		// ---- /host/checkin  (user group) ------------------------------------
+		hostResource
+			.addResource("checkin")
+			.addMethod("POST", new apigw.LambdaIntegration(checkinGuestFn), userMethodOptions);
 
 		// ---- /host/event  (user group) -------------------------------------
 		const hostEventResource = hostResource.addResource("event");
