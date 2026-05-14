@@ -331,6 +331,21 @@ export class SavethedateApiStack extends cdk.Stack {
 		invitationQueue.grantSendMessages(sendInvitationFn);
 		invitationsTable.grantReadWriteData(sendInvitationFn);
 
+		// --- Send All Invitations Lambda (user group) -----------------------
+		const sendAllInvitationsFn = new lambda.Function(this, "SendAllInvitationsFunction", {
+			...defaultLambdaProps,
+			functionName: "send-all-invitations",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "send_all_invitations.index.handler",
+			environment: {
+				...commonEnv,
+				QUEUE_URL: invitationQueue.queueUrl
+			}
+		});
+
+		invitationQueue.grantSendMessages(sendAllInvitationsFn);
+		invitationsTable.grantReadWriteData(sendAllInvitationsFn);
+
 		// --- Twilio Callback Lambda (public) --------------------------------
 		const twilioCallbackFn = new lambda.Function(this, "TwilioCallbackFunction", {
 			...defaultLambdaProps,
@@ -490,6 +505,11 @@ export class SavethedateApiStack extends cdk.Stack {
 		hostResource
 			.addResource("send-invitation")
 			.addMethod("POST", new apigw.LambdaIntegration(sendInvitationFn), userMethodOptions);
+
+		// ---- /host/send-all-invitations  (user group) ----------------------
+		hostResource
+			.addResource("send-all-invitations")
+			.addMethod("POST", new apigw.LambdaIntegration(sendAllInvitationsFn), userMethodOptions);
 
 		// ---- /callback/twilio  (public, no authorizer) ---------------------
 		const callbackResource = api.root.addResource("callback");
