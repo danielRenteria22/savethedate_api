@@ -19,6 +19,14 @@ def handler(event, context):
             return cors_response(400, {'error': 'confirmation_code is required'})
 
         dao = GuestDAO(table_name)
+        guest = dao.get_guest(subdomain, confirmation_code)
+
+        if not guest:
+            return cors_response(404, {'error': 'Guest not found'})
+
+        if guest.invitation_status in (InvitationStatus.SUCCESS, InvitationStatus.IN_PROGRESS):
+            return cors_response(400, {'error': f'Invitation already {guest.invitation_status}'})
+
         dao.update_guest(subdomain, confirmation_code, {'invitation_status': InvitationStatus.IN_PROGRESS})
 
         message = {
