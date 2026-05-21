@@ -24,7 +24,8 @@ def handler(event, context):
             return cors_response(404, {'error': 'Guest not found'})
         
         if guest.confirmed_assistance:
-            return cors_response(400, {'error': 'Cannot update confirmed guest'})
+            if 'table' not in body or len(body) != 1:
+                return cors_response(400, {'error': 'Confirmed guests can only have table updated'})
         
         updated_guest = dao.update_guest(subdomain, confirmation_code, body)
         

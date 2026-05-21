@@ -2,6 +2,7 @@ import json
 import os
 from decimal import Decimal
 from utils.guest_dao import GuestDAO
+from utils.response import cors_response
 
 table_name = os.environ['TABLE_NAME']
 
@@ -16,64 +17,40 @@ def handler(event, context):
         
         # Validate required fields
         if 'event_id' not in body or 'confirmation_code' not in body:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'event_id and confirmation_code are required'})
-            }
+            return cors_response(400, {'error': 'event_id and confirmation_code are required'})
         
-        if 'attending_guests' not in body or 'food_selection' not in body:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'attending_guests and food_selection are required'})
-            }
+        if 'attending_guests' not in body:
+            return cors_response(400, {'error': 'attending_guests is required'})
         
         event_id = body['event_id']
         confirmation_code = body['confirmation_code']
         attending_guests = body['attending_guests']
-        food_selection = body['food_selection']
+        food_selection = body.get('food_selection')
         
         # Validate types
         if not isinstance(attending_guests, int) or attending_guests < 0:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'attending_guests must be a non-negative integer'})
-            }
+            return cors_response(400, {'error': 'attending_guests must be a non-negative integer'})
         
-        if not isinstance(food_selection, list):
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'food_selection must be a list'})
-            }
+        if food_selection is not None and not isinstance(food_selection, list):
+            return cors_response(400, {'error': 'food_selection must be a list or null'})
         
         dao = GuestDAO(table_name)
         guest = dao.get_guest(event_id, confirmation_code)
         
         if not guest:
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'error': 'Guest not found'})
-            }
+            return cors_response(404, {'error': 'Guest not found'})
         
         # Check if already confirmed
         if guest.confirmed_assistance:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'Guest already confirmed'})
-            }
+            return cors_response(400, {'error': 'Guest already confirmed'})
         
         # Validate attending_guests doesn't exceed allowed
         if attending_guests > guest.num_guests:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': f'attending_guests cannot exceed {guest.num_guests}'})
-            }
+            return cors_response(400, {'error': f'attending_guests cannot exceed {guest.num_guests}'})
         
         # Validate food_selection length matches attending_guests
-        if len(food_selection) != attending_guests:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': f'food_selection must have {attending_guests} items'})
-            }
+        if food_selection is not None and len(food_selection) != attending_guests:
+            return cors_response(400, {'error': f'food_selection must have {attending_guests} items'})
         
         # Update guest confirmation
         updated_guest = dao.update_guest(event_id, confirmation_code, {
@@ -82,13 +59,9 @@ def handler(event, context):
             'food_selection': food_selection
         })
         
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'guest': updated_guest}, default=decimal_default)
-        }
+        response = cors_response(200, {'guest': updated_guest})
+        response['body'] = json.dumps({'guest': updated_guest}, default=decimal_default)
+        return response
         
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
-        }
+        return cors_response(500, {'error': str(e)})

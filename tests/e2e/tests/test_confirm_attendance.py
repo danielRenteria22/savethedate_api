@@ -92,3 +92,40 @@ def test_confirm_attendance_invalid_code(client, event_data):
     )
     
     assert response.status_code == 404
+
+
+def test_confirm_attendance_null_food_selection(user_client, client, event_data):
+    """Test confirming attendance with null food_selection"""
+    add_response = user_client.add_guest("No Food Guest", "+1", "5556667777", 2)
+    guest = add_response.json()["guest"]
+
+    response = client.confirm_attendance(
+        event_id="e2e_test_event",
+        confirmation_code=guest["confirmation_code"],
+        attending_guests=2,
+        food_selection=None
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["guest"]["confirmed_assistance"] == True
+    assert data["guest"]["attending_guests"] == 2
+    assert data["guest"]["food_selection"] is None
+
+
+def test_confirm_attendance_null_food_selection_zero_guests(user_client, client, event_data):
+    """Test confirming with null food_selection and zero attending guests"""
+    add_response = user_client.add_guest("Declining Guest", "+1", "5558889999", 2)
+    guest = add_response.json()["guest"]
+
+    response = client.confirm_attendance(
+        event_id="e2e_test_event",
+        confirmation_code=guest["confirmation_code"],
+        attending_guests=0,
+        food_selection=None
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["guest"]["confirmed_assistance"] == True
+    assert data["guest"]["attending_guests"] == 0

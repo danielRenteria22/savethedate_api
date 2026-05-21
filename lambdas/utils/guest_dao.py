@@ -138,7 +138,12 @@ class GuestDAO:
         response = self.table.query(
             KeyConditionExpression=Key('PK').eq(f'EVENT#{event_id}') & Key('SK').begins_with('GUEST#')
         )
-        return [Guest.from_dict(item) for item in response.get('Items', [])]
+        guests = []
+        for item in response.get('Items', []):
+            if 'confirmation_code' not in item:
+                continue
+            guests.append(Guest.from_dict(item))
+        return guests
     
     def update_guest(self, event_id: str, confirmation_code: str, updates: Dict[str, Any]) -> Dict[str, Any]:
         update_expr = 'SET '
