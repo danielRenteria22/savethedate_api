@@ -316,6 +316,16 @@ export class SavethedateApiStack extends cdk.Stack {
 
 		invitationsTable.grantReadWriteData(confirmAttendanceFn);
 
+		// --- Get Invitation Lambda (public) ---------------------------------
+		const getInvitationFn = new lambda.Function(this, "GetInvitationFunction", {
+			...defaultLambdaProps,
+			functionName: "get-invitation",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "get_invitation.index.handler",
+		});
+
+		invitationsTable.grantReadData(getInvitationFn);
+
 		// --- Send Invitation Lambda (user group) ----------------------------
 		const sendInvitationFn = new lambda.Function(this, "SendInvitationFunction", {
 			...defaultLambdaProps,
@@ -465,6 +475,14 @@ export class SavethedateApiStack extends cdk.Stack {
 		apiResource
 			.addResource("data")
 			.addMethod("GET", new apigw.LambdaIntegration(publicFn), userMethodOptions);
+
+		// ---- /api/{event_id}/{confirmation_code}  (public, no authorizer) --
+		const invitationEventResource = apiResource.addResource("{event_id}");
+		invitationEventResource
+			.addResource("{confirmation_code}")
+			.addMethod("GET", new apigw.LambdaIntegration(getInvitationFn), {
+				authorizationType: apigw.AuthorizationType.NONE,
+			});
 
 		// ---- /api/admin/users  (admin group only) --------------------------
 		const adminResource = apiResource.addResource("admin");

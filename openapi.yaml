@@ -76,6 +76,9 @@ components:
         table:
           type: string
           nullable: true
+        checked_in:
+          type: boolean
+          default: false
 
 paths:
   /auth/login:
@@ -439,6 +442,82 @@ paths:
                 properties:
                   message:
                     type: string
+        '400':
+          description: Invitation already sent or in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /host/send-all-invitations:
+    post:
+      summary: Send invitations to all guests without SUCCESS or IN_PROGRESS status
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: No pending invitations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  queued:
+                    type: integer
+        '202':
+          description: Invitations queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  queued:
+                    type: integer
+
+  /host/checkin:
+    post:
+      summary: Check in a guest
+      description: Marks a guest as checked in. A guest can only be checked in once.
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [guest_id]
+              properties:
+                guest_id:
+                  type: string
+      responses:
+        '200':
+          description: Guest checked in or already checked in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Missing guest_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /callback/twilio:
     post:
