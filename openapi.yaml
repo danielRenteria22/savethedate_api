@@ -170,6 +170,41 @@ paths:
         '200':
           description: Success
 
+  /api/{event_id}/{confirmation_code}:
+    get:
+      summary: Get event and invitation info
+      description: Public endpoint for guests to retrieve event details and their invitation info.
+      tags: [Public]
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: confirmation_code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    $ref: '#/components/schemas/Event'
+                  invitation:
+                    $ref: '#/components/schemas/Guest'
+        '404':
+          description: Event or invitation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /api/admin/users:
     get:
       summary: List users

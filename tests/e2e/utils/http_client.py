@@ -143,6 +143,10 @@ class ApiClient:
         """PUT /host/event - Update my event (user)"""
         return self.session.put(f"{self.base_url}/host/event", json=updates)
 
+    def get_invitation(self, event_id: str, confirmation_code: str):
+        """GET /api/{event_id}/{confirmation_code} - Get invitation (public)"""
+        return self.session.get(f"{self.base_url}/api/{event_id}/{confirmation_code}")
+
     def confirm_attendance(self, event_id: str, confirmation_code: str, 
                           attending_guests: int, food_selection: list):
         """POST /confirm - Confirm attendance (public)"""
