@@ -376,6 +376,8 @@ export class SavethedateApiStack extends cdk.Stack {
 			environment: {
 				...commonEnv,
 				TWILIO_SECRET_NAME: twilioSecretName,
+				TWILIO_CONTENT_SID: process.env.TWILIO_CONTENT_SID || "HXb68ee255121a3c5ec8dbd5b912cd8bb7",
+				FRONTEND_URL: process.env.FRONTEND_URL || "save-the-date.mx",
 				CALLBACK_URL: "" // Will be set after API creation
 			}
 		});

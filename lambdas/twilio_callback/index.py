@@ -13,6 +13,7 @@ def handler(event, context):
         confirmation_code = params.get('confirmation_code')
         
         body = event.get('body', '')
+        print('body:', body)
         if isinstance(body, str):
             from urllib.parse import parse_qs
             body_params = parse_qs(body)
