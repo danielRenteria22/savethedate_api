@@ -42,7 +42,7 @@ def handler(event, context):
                 continue
             
             to_number = f"whatsapp:{guest.phone_code}{guest.phone_number}"
-            link = f"{event_id}.{frontend_url}?c={confirmation_code}"
+            link = f"{event_id}.{frontend_url}/{confirmation_code}"
             
             content_variables = json.dumps({
                 "name": guest.name,
