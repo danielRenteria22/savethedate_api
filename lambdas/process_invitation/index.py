@@ -59,7 +59,7 @@ def handler(event, context):
                 status_callback=f"{callback_url}?event_id={event_id}&confirmation_code={confirmation_code}"
             )
             
-            if twilio_message.status in ['queued', 'sent', 'delivered']:
+            if twilio_message.status in ['delivered']:
                 dao.update_guest(event_id, confirmation_code, {'invitation_status': InvitationStatus.SUCCESS})
             else:
                 print(f"Message failed with status: {twilio_message.status}")
