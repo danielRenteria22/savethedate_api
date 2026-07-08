@@ -142,3 +142,24 @@ def test_add_guest_missing_fields(user_client):
     """Test adding guest with missing fields"""
     response = user_client.add_guest(name="Test", phone_code="+1", phone_number="", num_guests=1)
     assert response.status_code == 400
+
+
+def test_mark_invitation_sent(user_client, guest_data):
+    """Test manually marking invitation as sent"""
+    add_response = user_client.add_guest(**guest_data)
+    assert add_response.status_code == 201
+    confirmation_code = add_response.json()["guest"]["confirmation_code"]
+    assert add_response.json()["guest"]["invitation_status"] == 'NOT_SENT'
+
+    # Mark as sent
+    mark_response = user_client.mark_invitation_sent(confirmation_code)
+    assert mark_response.status_code == 200
+    assert mark_response.json()["invitation_status"] == 'SUCCESS'
+
+    # Verify status is updated when listing guests
+    list_response = user_client.list_guests()
+    assert list_response.status_code == 200
+    guests = list_response.json()["guests"]
+    guest = next(g for g in guests if g["confirmation_code"] == confirmation_code)
+    assert guest["invitation_status"] == 'SUCCESS'
+

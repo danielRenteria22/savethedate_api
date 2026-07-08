@@ -514,6 +514,47 @@ paths:
                   queued:
                     type: integer
 
+  /host/mark-sent:
+    post:
+      summary: Manually mark invitation as sent
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation_code]
+              properties:
+                confirmation_code:
+                  type: string
+      responses:
+        '200':
+          description: Invitation marked as sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  invitation_status:
+                    type: string
+        '400':
+          description: Missing confirmation_code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Guest not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /host/checkin:
     post:
       summary: Check in a guest

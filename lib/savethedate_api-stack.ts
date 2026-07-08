@@ -286,6 +286,16 @@ export class SavethedateApiStack extends cdk.Stack {
 
 		invitationsTable.grantReadWriteData(checkinGuestFn);
 
+		// --- Mark Sent Lambda (user group) -----------------------------------
+		const markSentFn = new lambda.Function(this, "MarkSentFunction", {
+			...defaultLambdaProps,
+			functionName: "mark-sent",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "mark_sent.index.handler",
+		});
+
+		invitationsTable.grantReadWriteData(markSentFn);
+
 		// --- Update My Event Lambda (user group) ----------------------------
 		const updateMyEventFn = new lambda.Function(this, "UpdateMyEventFunction", {
 			...defaultLambdaProps,
@@ -515,6 +525,11 @@ export class SavethedateApiStack extends cdk.Stack {
 		hostResource
 			.addResource("checkin")
 			.addMethod("POST", new apigw.LambdaIntegration(checkinGuestFn), userMethodOptions);
+
+		// ---- /host/mark-sent  (user group) ----------------------------------
+		hostResource
+			.addResource("mark-sent")
+			.addMethod("POST", new apigw.LambdaIntegration(markSentFn), userMethodOptions);
 
 		// ---- /host/event  (user group) -------------------------------------
 		const hostEventResource = hostResource.addResource("event");

@@ -173,3 +173,11 @@ class ApiClient:
             f"{self.base_url}/host/checkin",
             json={"guest_id": guest_id}
         )
+
+    def mark_invitation_sent(self, confirmation_code: str):
+        """POST /host/mark-sent - Manually mark invitation as sent"""
+        return self.session.post(
+            f"{self.base_url}/host/mark-sent",
+            json={"confirmation_code": confirmation_code}
+        )
+
