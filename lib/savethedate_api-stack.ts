@@ -383,7 +383,6 @@ export class SavethedateApiStack extends cdk.Stack {
 			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
 			handler: "process_invitation.index.handler",
 			timeout: cdk.Duration.seconds(60),
-			reservedConcurrentExecutions: 1,
 			environment: {
 				...commonEnv,
 				TWILIO_SECRET_NAME: twilioSecretName,
@@ -396,6 +395,7 @@ export class SavethedateApiStack extends cdk.Stack {
 
 		processInvitationFn.addEventSource(new lambdaEventSources.SqsEventSource(invitationQueue, {
 			batchSize: 10,
+			maxConcurrency: 2,
 			reportBatchItemFailures: true
 		}));
 
