@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import boto3
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
@@ -12,6 +13,7 @@ secret_name = os.environ['TWILIO_SECRET_NAME']
 callback_url = os.environ['CALLBACK_URL']
 content_sid = os.environ['TWILIO_CONTENT_SID']
 frontend_url = os.environ['FRONTEND_URL']
+delay_seconds = float(os.environ.get('MESSAGE_DELAY_SECONDS', '2'))
 
 secrets_client = boto3.client('secretsmanager')
 
@@ -25,7 +27,9 @@ def handler(event, context):
     
     batch_item_failures = []
     
-    for record in event['Records']:
+    for idx, record in enumerate(event['Records']):
+        if idx > 0 and delay_seconds > 0:
+            time.sleep(delay_seconds)
         try:
             message = json.loads(record['body'])
             event_id = message['event_id']

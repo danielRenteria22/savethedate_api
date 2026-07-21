@@ -383,12 +383,14 @@ export class SavethedateApiStack extends cdk.Stack {
 			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
 			handler: "process_invitation.index.handler",
 			timeout: cdk.Duration.seconds(60),
+			reservedConcurrentExecutions: 1,
 			environment: {
 				...commonEnv,
 				TWILIO_SECRET_NAME: twilioSecretName,
 				TWILIO_CONTENT_SID: process.env.TWILIO_CONTENT_SID || "HXb68ee255121a3c5ec8dbd5b912cd8bb7",
 				FRONTEND_URL: process.env.FRONTEND_URL || "save-the-date.mx",
-				CALLBACK_URL: "" // Will be set after API creation
+				CALLBACK_URL: "", // Will be set after API creation
+				MESSAGE_DELAY_SECONDS: process.env.MESSAGE_DELAY_SECONDS || "2"
 			}
 		});
 
