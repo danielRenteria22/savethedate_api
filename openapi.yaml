@@ -381,6 +381,14 @@ paths:
           text/csv:
             schema:
               type: string
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file containing guests
           application/json:
             schema:
               type: object
