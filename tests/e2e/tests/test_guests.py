@@ -163,3 +163,41 @@ def test_mark_invitation_sent(user_client, guest_data):
     guest = next(g for g in guests if g["confirmation_code"] == confirmation_code)
     assert guest["invitation_status"] == 'SUCCESS'
 
+
+def test_add_guest_batch_csv(user_client):
+    """Test batch guest creation via CSV string matching real file schema with dummy values"""
+    csv_content = (
+        "NOMBRE,APELLIDO,CODIGO PAIS,WHATSAPP,No. PASES RECEPCIÓN,No. MESA\n"
+        "Test,UserOne,52,5550000001,2,1\n"
+        "Test,UserTwo,52,5550000002,2,2\n"
+        "Test,UserThree,1,5550000003,2,1\n"
+    )
+    response = user_client.add_guest_batch(csv_data=csv_content)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["created_count"] == 3
+    assert len(data["guests"]) == 3
+    
+    # Verify guest details
+    user1 = next(g for g in data["guests"] if g["name"] == "Test UserOne")
+    assert user1["phone_code"] == "+52"
+    assert user1["phone_number"] == "5550000001"
+    assert user1["num_guests"] == 2
+    assert user1["table"] == "1"
+
+    user3 = next(g for g in data["guests"] if g["name"] == "Test UserThree")
+    assert user3["phone_code"] == "+1"
+
+
+def test_add_guest_batch_json(user_client):
+    """Test batch guest creation via JSON payload"""
+    guests_list = [
+        {"name": "Dummy Guest 1", "phone_code": "+52", "phone_number": "5551112222", "num_guests": 1, "table": "A"},
+        {"name": "Dummy Guest 2", "phone_code": "+1", "phone_number": "5553334444", "num_guests": 3, "table": "B"}
+    ]
+    response = user_client.add_guest_batch(guests=guests_list)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["created_count"] == 2
+
+

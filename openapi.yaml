@@ -369,6 +369,49 @@ paths:
                     items:
                       $ref: '#/components/schemas/Guest'
 
+  /host/guests/batch:
+    post:
+      summary: Batch create guests from CSV or JSON
+      tags: [Host]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+          application/json:
+            schema:
+              type: object
+              properties:
+                csv:
+                  type: string
+                guests:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '201':
+          description: Batch creation successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  created_count:
+                    type: integer
+                  guests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Guest'
+                  errors:
+                    type: array
+                    items:
+                      type: object
+
   /host/guests/{guest_id}:
     put:
       summary: Update guest

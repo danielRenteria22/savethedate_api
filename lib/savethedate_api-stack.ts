@@ -271,7 +271,15 @@ export class SavethedateApiStack extends cdk.Stack {
 			handler: "delete_guest.index.handler",
 		});
 
+		const addGuestBatchFn = new lambda.Function(this, "AddGuestBatchFunction", {
+			...defaultLambdaProps,
+			functionName: "add-guest-batch",
+			code: lambda.Code.fromAsset(path.join(__dirname, "../lambdas")),
+			handler: "add_guest_batch.index.handler",
+		});
+
 		invitationsTable.grantReadWriteData(addGuestFn);
+		invitationsTable.grantReadWriteData(addGuestBatchFn);
 		invitationsTable.grantReadWriteData(listGuestsFn);
 		invitationsTable.grantReadWriteData(updateGuestFn);
 		invitationsTable.grantReadWriteData(deleteGuestFn);
@@ -522,6 +530,9 @@ export class SavethedateApiStack extends cdk.Stack {
 		const guestIdResource = guestsResource.addResource("{guest_id}");
 		guestIdResource.addMethod("PUT", new apigw.LambdaIntegration(updateGuestFn), userMethodOptions);
 		guestIdResource.addMethod("DELETE", new apigw.LambdaIntegration(deleteGuestFn), userMethodOptions);
+
+		const batchGuestsResource = guestsResource.addResource("batch");
+		batchGuestsResource.addMethod("POST", new apigw.LambdaIntegration(addGuestBatchFn), userMethodOptions);
 
 		// ---- /host/checkin  (user group) ------------------------------------
 		hostResource

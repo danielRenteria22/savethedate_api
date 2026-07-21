@@ -123,6 +123,27 @@ class ApiClient:
             payload["table"] = table
         return self.session.post(f"{self.base_url}/host/guests", json=payload)
 
+    def add_guest_batch(self, csv_data: str = None, guests: list = None, json_payload: dict = None):
+        """POST /host/guests/batch - Add guests in batch via CSV or JSON"""
+        if csv_data is not None:
+            return self.session.post(
+                f"{self.base_url}/host/guests/batch",
+                data=csv_data,
+                headers={"Content-Type": "text/csv"}
+            )
+        elif guests is not None:
+            return self.session.post(
+                f"{self.base_url}/host/guests/batch",
+                json={"guests": guests}
+            )
+        elif json_payload is not None:
+            return self.session.post(
+                f"{self.base_url}/host/guests/batch",
+                json=json_payload
+            )
+        else:
+            raise ValueError("Must provide csv_data, guests, or json_payload")
+
     def list_guests(self):
         """GET /host/guests - List guests"""
         return self.session.get(f"{self.base_url}/host/guests")

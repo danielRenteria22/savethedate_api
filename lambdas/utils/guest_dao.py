@@ -127,6 +127,12 @@ class GuestDAO:
         self.table.put_item(Item=guest)
         return guest
     
+    def create_guests_batch(self, guests: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        with self.table.batch_writer() as batch:
+            for guest in guests:
+                batch.put_item(Item=guest)
+        return guests
+    
     def get_guest(self, event_id: str, confirmation_code: str) -> Optional[Guest]:
         response = self.table.get_item(
             Key={'PK': f'EVENT#{event_id}', 'SK': f'GUEST#{confirmation_code}'}
