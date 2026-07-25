@@ -28,7 +28,7 @@ def handler(event, context):
         
         if message_status in ['delivered']:
             dao.update_guest(event_id, confirmation_code, {'invitation_status': InvitationStatus.SUCCESS})
-        elif message_status in ['failed', 'undelivered']:
+        elif message_status in ['failed','canceled', 'undelivered']:
             dao.update_guest(event_id, confirmation_code, {'invitation_status': InvitationStatus.FAILED})
         
         return {'statusCode': 200, 'body': json.dumps({'message': 'Status updated'})}

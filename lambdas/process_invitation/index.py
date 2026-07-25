@@ -65,7 +65,7 @@ def handler(event, context):
             
             if twilio_message.status in ['delivered']:
                 dao.update_guest(event_id, confirmation_code, {'invitation_status': InvitationStatus.SUCCESS})
-            else:
+            elif twilio_message.status in ['failed']:
                 print(f"Message failed with status: {twilio_message.status}")
                 receive_count = int(record['attributes'].get('ApproximateReceiveCount', 0))
                 if receive_count >= 3:
